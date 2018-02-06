@@ -48,7 +48,7 @@ def callback(ch, method, properties, body):
                 "job_id": msg['job_id'],
             }
 
-            conn.sendJson('ftp_job_complete', body_message)
+            conn.sendJson('job_ftp_completed', body_message)
         except Exception as e:
             logging.error(e)
             traceback.print_exc()
@@ -74,7 +74,7 @@ conn.load_configuration()
 
 queues = [
     'job_ftp',
-    'job_ftp_complete',
+    'job_ftp_completed',
     'error'
 ]
 
