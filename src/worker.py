@@ -4,9 +4,9 @@ import os
 import json
 import traceback
 import logging
+import configparser
 
 from ftplib import FTP
-
 from amqp_connection import Connection
 
 conn = Connection()
@@ -15,6 +15,12 @@ logging.basicConfig(
     format="%(asctime)-15s [%(levelname)s] %(message)s",
     level=logging.DEBUG,
 )
+
+config = configparser.RawConfigParser()
+config.read([
+    'worker.cfg',
+    '/etc/py_gpac_worker/worker.cfg'
+])
 
 def callback(ch, method, properties, body):
     try:
@@ -70,7 +76,7 @@ def callback(ch, method, properties, body):
         }
         conn.sendJson('error', error_content)
 
-conn.load_configuration()
+conn.load_configuration(config['amqp'])
 
 queues = [
     'job_ftp',
