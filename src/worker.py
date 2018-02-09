@@ -7,7 +7,7 @@ import logging
 
 from ftplib import FTP
 
-from connection import Connection
+from amqp_connection import Connection
 
 conn = Connection()
 

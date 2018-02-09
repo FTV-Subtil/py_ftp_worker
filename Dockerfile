@@ -5,6 +5,6 @@ ADD . .
 
 RUN apk update && \
     apk add python3 && \
-    pip3 install pika
+    pip3 install pika amqp_connection
 
 CMD python3 src/worker.py
