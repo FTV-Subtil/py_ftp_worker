@@ -76,7 +76,7 @@ def callback(ch, method, properties, body):
                 "job_id": msg['job_id'],
                 "type": "job_ftp"
             }
-            conn.sendJson('error', error_content)
+            conn.sendJson('job_ftp_error', error_content)
 
     except Exception as e:
         logging.error(e)
@@ -86,7 +86,7 @@ def callback(ch, method, properties, body):
             "error": str(e),
             "type": "job_ftp"
         }
-        conn.sendJson('error', error_content)
+        conn.sendJson('job_ftp_error', error_content)
 
 conn.load_configuration(config['amqp'])
 
