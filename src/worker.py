@@ -33,17 +33,29 @@ def callback(ch, method, properties, body):
             src_path = source['path']
             dst_path = destination['path']
 
-            src_hostname = source['hostname']
-            src_username = source['username']
-            src_password = source['password']
+            if 'hostname' in source:
+                src_hostname = source['hostname']
+                src_username = source['username']
+                src_password = source['password']
 
-            if not os.path.exists(os.path.dirname(dst_path)):
-                os.makedirs(os.path.dirname(dst_path))
+                if not os.path.exists(os.path.dirname(dst_path)):
+                    os.makedirs(os.path.dirname(dst_path))
 
-            ftp = FTP(src_hostname)
-            ftp.login(src_username, src_password)
-            ftp.retrbinary('RETR ' + src_path, open(dst_path, 'wb').write)
-            ftp.quit()
+                ftp = FTP(src_hostname)
+                ftp.login(src_username, src_password)
+                ftp.retrbinary('RETR ' + src_path, open(dst_path, 'wb').write)
+                ftp.quit()
+            elif 'hostname' in destination:
+                dst_hostname = destination['hostname']
+                dst_username = destination['username']
+                dst_password = destination['password']
+
+                ftp = FTP(dst_hostname)
+                ftp.login(dst_username, dst_password)
+                ftp.storbinary('STOR ' + dst_path, open(src_path, 'rb'))
+                ftp.quit()
+            else:
+                raise Exception("bad job order parameters")
 
             logging.info("""End of tranfer file from %s to %s""",
                 src_path,
@@ -64,7 +76,7 @@ def callback(ch, method, properties, body):
                 "job_id": msg['job_id'],
                 "type": "job_ftp"
             }
-            conn.sendJson('error', error_content)
+            conn.sendJson('job_ftp_error', error_content)
 
     except Exception as e:
         logging.error(e)
@@ -74,14 +86,14 @@ def callback(ch, method, properties, body):
             "error": str(e),
             "type": "job_ftp"
         }
-        conn.sendJson('error', error_content)
+        conn.sendJson('job_ftp_error', error_content)
 
 conn.load_configuration(config['amqp'])
 
 queues = [
     'job_ftp',
     'job_ftp_completed',
-    'error'
+    'job_ftp_error'
 ]
 
 conn.connect(queues)
