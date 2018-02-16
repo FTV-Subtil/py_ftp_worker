@@ -45,18 +45,17 @@ def callback(ch, method, properties, body):
                 ftp.login(src_username, src_password)
                 ftp.retrbinary('RETR ' + src_path, open(dst_path, 'wb').write)
                 ftp.quit()
-            else:
-                if 'hostname' in destination:
-                    dst_hostname = destination['hostname']
-                    dst_username = destination['username']
-                    dst_password = destination['password']
+            elif 'hostname' in destination:
+                dst_hostname = destination['hostname']
+                dst_username = destination['username']
+                dst_password = destination['password']
 
-                    ftp = FTP(dst_hostname)
-                    ftp.login(dst_username, dst_password)
-                    ftp.storbinary('STOR ' + dst_path, open(src_path, 'rb'))
-                    ftp.quit()
-                else:
-                    raise Exception("bad job order parameters")
+                ftp = FTP(dst_hostname)
+                ftp.login(dst_username, dst_password)
+                ftp.storbinary('STOR ' + dst_path, open(src_path, 'rb'))
+                ftp.quit()
+            else:
+                raise Exception("bad job order parameters")
 
             logging.info("""End of tranfer file from %s to %s""",
                 src_path,
