@@ -22,6 +22,24 @@ config.read([
     '/etc/py_gpac_worker/worker.cfg'
 ])
 
+
+def exists(ftp, path):
+    try:
+        ftp.nlst(path)
+    except Exception as e:
+        return False
+    return True
+
+def mkdirs(ftp, dst_path):
+    path = ""
+    for level in dst_path.split("/")[:-1]:
+        if level == "":
+            continue
+
+        path = path + "/" + level
+        if not exists(ftp, path):
+            ftp.mkd(path)
+
 def callback(ch, method, properties, body):
     try:
         msg = json.loads(body.decode('utf-8'))
@@ -52,6 +70,7 @@ def callback(ch, method, properties, body):
 
                 ftp = FTP(dst_hostname)
                 ftp.login(dst_username, dst_password)
+                mkdirs(ftp, dst_path)
                 ftp.storbinary('STOR ' + dst_path, open(src_path, 'rb'))
                 ftp.quit()
             else:
