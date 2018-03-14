@@ -42,11 +42,12 @@ def mkdirs(ftp, dst_path):
 
 def check_requirements(requirements):
     meet_requirements = True
-    if 'path' in requirements:
-        required_path = requirements['path']
-        if not os.path.exists(required_path):
-            logging.debug("Required file does not exists: %s", required_path)
-            meet_requirements = False
+    if 'paths' in requirements:
+        required_paths = requirements['paths']
+        for path in required_paths:
+            if not os.path.exists(path):
+                logging.debug("Warning: Required file does not exists: %s", path)
+                meet_requirements = False
 
     return meet_requirements
 
