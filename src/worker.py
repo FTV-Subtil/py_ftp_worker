@@ -44,6 +44,7 @@ def check_requirements(requirements):
     meet_requirements = True
     if 'paths' in requirements:
         required_paths = requirements['paths']
+        assert isinstance(required_paths, list)
         for path in required_paths:
             if not os.path.exists(path):
                 logging.debug("Warning: Required file does not exists: %s", path)
