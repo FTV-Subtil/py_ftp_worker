@@ -40,14 +40,32 @@ def mkdirs(ftp, dst_path):
         if not exists(ftp, path):
             ftp.mkd(path)
 
+def check_requirements(requirements):
+    meet_requirements = True
+    if 'paths' in requirements:
+        required_paths = requirements['paths']
+        assert isinstance(required_paths, list)
+        for path in required_paths:
+            if not os.path.exists(path):
+                logging.debug("Warning: Required file does not exists: %s", path)
+                meet_requirements = False
+
+    return meet_requirements
+
+
 def callback(ch, method, properties, body):
     try:
         msg = json.loads(body.decode('utf-8'))
         logging.debug(msg)
 
         try:
-            source = msg['parameters']['source']
-            destination = msg['parameters']['destination']
+            parameters = msg['parameters']
+            if 'requirements' in parameters:
+                if not check_requirements(parameters['requirements']):
+                    return False
+
+            source = parameters['source']
+            destination = parameters['destination']
             src_path = source['path']
             dst_path = destination['path']
 
