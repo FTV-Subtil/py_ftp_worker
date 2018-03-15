@@ -60,8 +60,8 @@ def callback(ch, method, properties, body):
 
         try:
             parameters = msg['parameters']
-            if 'requirement' in parameters:
-                if not check_requirements(parameters['requirement']):
+            if 'requirements' in parameters:
+                if not check_requirements(parameters['requirements']):
                     return False
 
             source = parameters['source']
