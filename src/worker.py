@@ -103,7 +103,7 @@ def callback(ch, method, properties, body):
                 "job_id": msg['job_id'],
             }
 
-            conn.sendJson('job_ftp_completed', body_message)
+            conn.publish_json('job_ftp_completed', body_message)
         except Exception as e:
             logging.error(e)
             traceback.print_exc()
@@ -113,7 +113,7 @@ def callback(ch, method, properties, body):
                 "job_id": msg['job_id'],
                 "type": "job_ftp"
             }
-            conn.sendJson('job_ftp_error', error_content)
+            conn.publish_json('job_ftp_error', error_content)
 
     except Exception as e:
         logging.error(e)
@@ -123,15 +123,17 @@ def callback(ch, method, properties, body):
             "error": str(e),
             "type": "job_ftp"
         }
-        conn.sendJson('job_ftp_error', error_content)
+        conn.publish_json('job_ftp_error', error_content)
 
-conn.load_configuration(config['amqp'])
 
-queues = [
-    'job_ftp',
-    'job_ftp_completed',
-    'job_ftp_error'
-]
-
-conn.connect(queues)
-conn.consume('job_ftp', callback)
+conn.run(
+    config['amqp'],
+    [
+        'job_ftp'
+    ],
+    [
+        'job_ftp_completed',
+        'job_ftp_error'
+    ],
+    callback
+)
