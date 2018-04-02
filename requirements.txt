@@ -1,4 +1,4 @@
 # Dependencies requirements for FTP worker
 
-amqp-connection==1.4
+amqp-connection==1.4.1
 pika==0.11.2
