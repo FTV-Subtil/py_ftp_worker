@@ -128,9 +128,7 @@ def callback(ch, method, properties, body):
 
 conn.run(
     config['amqp'],
-    [
-        'job_ftp'
-    ],
+    'job_ftp',
     [
         'job_ftp_completed',
         'job_ftp_error'
