@@ -104,7 +104,7 @@ def callback(ch, method, properties, body):
         try:
             parameters = msg['parameters']
             if 'requirements' in parameters:
-                if not check_requirements(parameters['requirements']):
+                if not check_requirements(get_parameter(parameters, 'requirements')):
                     return False
 
             src_path = get_parameter(parameters, 'source_path')
