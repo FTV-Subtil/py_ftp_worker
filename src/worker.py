@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-import os
-import json
-import traceback
-import logging
 import configparser
+import json
+import logging
+import os
+import requests
+import traceback
 
 from ftplib import FTP
 from amqp_connection import Connection
@@ -52,6 +53,48 @@ def check_requirements(requirements):
 
     return meet_requirements
 
+def get_config_parameter(config, key, param):
+    if key in os.environ:
+        return os.environ.get(key)
+
+    if param in config:
+        return config[param]
+    raise RuntimeError("Missing '" + param + "' configuration value.")
+
+def get_parameter(parameters, key):
+    for parameter in parameters:
+        if parameter['id'] == key:
+            value = None
+            if 'default' in parameter:
+                value = parameter['default']
+
+            if 'value' in parameter:
+                value = parameter['value']
+
+            if(parameter['type'] != 'credential'):
+                return value
+
+            hostname = get_config_parameter(config['backend'], 'BACKEND_HOSTNAME', 'hostname')
+            username = get_config_parameter(config['backend'], 'BACKEND_USERNAME', 'username')
+            password = get_config_parameter(config['backend'], 'BACKEND_PASSWORD', 'password')
+
+            response = requests.post(hostname + '/sessions', json={'session': {'email': username, 'password': password}})
+            if response.status_code != 200:
+                raise("unable to get token to retrieve credential value")
+
+            body = response.json()
+            if not 'access_token' in body:
+                raise("missing access token in response to get credential value")
+
+            headers = {'Authorization': body['access_token']}
+            response = requests.get(hostname + '/credentials/' + value, headers=headers)
+
+            if response.status_code != 200:
+                raise("unable to access to credential named: " + key)
+
+            body = response.json()
+            return body['data']['value']
+    return None
 
 def callback(ch, method, properties, body):
     try:
@@ -64,16 +107,16 @@ def callback(ch, method, properties, body):
                 if not check_requirements(parameters['requirements']):
                     return False
 
-            source = parameters['source']
-            destination = parameters['destination']
-            src_path = source['path']
-            dst_path = destination['path']
+            src_path = get_parameter(parameters, 'source_path')
+            dst_path = get_parameter(parameters, 'destination_path')
+            src_hostname = get_parameter(parameters, 'source_hostname')
+            src_username = get_parameter(parameters, 'source_username')
+            src_password = get_parameter(parameters, 'source_password')
+            dst_hostname = get_parameter(parameters, 'destination_hostname')
+            dst_username = get_parameter(parameters, 'destination_username')
+            dst_password = get_parameter(parameters, 'destination_password')
 
-            if 'hostname' in source:
-                src_hostname = source['hostname']
-                src_username = source['username']
-                src_password = source['password']
-
+            if src_hostname:
                 if not os.path.exists(os.path.dirname(dst_path)):
                     os.makedirs(os.path.dirname(dst_path))
 
@@ -81,11 +124,7 @@ def callback(ch, method, properties, body):
                 ftp.login(src_username, src_password)
                 ftp.retrbinary('RETR ' + src_path, open(dst_path, 'wb').write)
                 ftp.quit()
-            elif 'hostname' in destination:
-                dst_hostname = destination['hostname']
-                dst_username = destination['username']
-                dst_password = destination['password']
-
+            elif dst_hostname:
                 ftp = FTP(dst_hostname)
                 ftp.login(dst_username, dst_password)
                 mkdirs(ftp, dst_path)
