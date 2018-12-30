@@ -35,8 +35,8 @@ def exists(ftp, path):
     return True
 
 
-def mkdirs(ftp, prefix, dst_path):
-    path = prefix
+def mkdirs(ftp, dst_path):
+    path = ""
     for level in dst_path.split("/")[:-1]:
         if level == "":
             continue
@@ -120,10 +120,17 @@ def callback(ch, method, properties, body):
             src_hostname = get_parameter(parameters, 'source_hostname')
             src_username = get_parameter(parameters, 'source_username')
             src_password = get_parameter(parameters, 'source_password')
-            dst_prefix = get_parameter(parameters, 'destination_prefix')
+            src_prefix = get_parameter(parameters, 'source_prefix')
             dst_hostname = get_parameter(parameters, 'destination_hostname')
             dst_username = get_parameter(parameters, 'destination_username')
             dst_password = get_parameter(parameters, 'destination_password')
+            dst_prefix = get_parameter(parameters, 'destination_prefix')
+
+            if src_prefix != None:
+                src_path = src_prefix + src_path
+
+            if dst_prefix != None:
+                dst_path = dst_prefix + dst_path
 
             if src_hostname:
                 if not os.path.exists(os.path.dirname(dst_path)):
@@ -137,9 +144,9 @@ def callback(ch, method, properties, body):
                 ftp = FTP_TLS(dst_hostname)
                 ftp.login(dst_username, dst_password)
                 ftp.prot_p()
-                mkdirs(ftp, dst_prefix, dst_path)
-                logging.info("start upload " + src_path + " to " + dst_prefix + dst_path)
-                ftp.storbinary('STOR ' + dst_prefix + dst_path, open(src_path, 'rb'))
+                mkdirs(ftp, dst_path)
+                logging.info("start upload " + src_path + " to " + dst_path)
+                ftp.storbinary('STOR ' + dst_path, open(src_path, 'rb'))
                 ftp.quit()
             else:
                 raise Exception("bad job order parameters")
