@@ -4,8 +4,7 @@ WORKDIR /app
 ADD . .
 
 RUN apk update && \
-    apt install -y libssl1.1 ca-certificates && \
-    apk add python3 && \
+    apk add python3 libssl1.1 ca-certificates && \
     pip3 install -r requirements.txt
 
 CMD python3 src/worker.py
