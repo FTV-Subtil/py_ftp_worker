@@ -7,14 +7,14 @@ import os
 import requests
 import traceback
 
-from ftplib import FTP
+from ftplib import FTP, FTP_TLS
 from amqp_connection import Connection
 
 conn = Connection()
 
 logging.basicConfig(
     format="%(asctime)-15s [%(levelname)s] %(message)s",
-    level=logging.DEBUG,
+    level=logging.INFO,
 )
 
 config = configparser.RawConfigParser()
@@ -26,20 +26,28 @@ config.read([
 
 def exists(ftp, path):
     try:
-        ftp.nlst(path)
+        pwd = ftp.pwd()
+        ftp.cwd(path)
+        ftp.cwd(pwd)
     except Exception as e:
+        print(e)
         return False
     return True
 
-def mkdirs(ftp, dst_path):
-    path = ""
+
+def mkdirs(ftp, prefix, dst_path):
+    path = prefix
     for level in dst_path.split("/")[:-1]:
         if level == "":
             continue
 
         path = path + "/" + level
         if not exists(ftp, path):
-            ftp.mkd(path)
+            try:
+                ftp.mkd(path)
+            except Exception as e:
+                logging.info(e)
+
 
 def check_requirements(requirements):
     meet_requirements = True
@@ -112,6 +120,7 @@ def callback(ch, method, properties, body):
             src_hostname = get_parameter(parameters, 'source_hostname')
             src_username = get_parameter(parameters, 'source_username')
             src_password = get_parameter(parameters, 'source_password')
+            dst_prefix = get_parameter(parameters, 'destination_prefix')
             dst_hostname = get_parameter(parameters, 'destination_hostname')
             dst_username = get_parameter(parameters, 'destination_username')
             dst_password = get_parameter(parameters, 'destination_password')
@@ -125,10 +134,12 @@ def callback(ch, method, properties, body):
                 ftp.retrbinary('RETR ' + src_path, open(dst_path, 'wb').write)
                 ftp.quit()
             elif dst_hostname:
-                ftp = FTP(dst_hostname)
+                ftp = FTP_TLS(dst_hostname)
                 ftp.login(dst_username, dst_password)
-                mkdirs(ftp, dst_path)
-                ftp.storbinary('STOR ' + dst_path, open(src_path, 'rb'))
+                ftp.prot_p()
+                mkdirs(ftp, dst_prefix, dst_path)
+                logging.info("start upload " + src_path + " to " + dst_prefix + dst_path)
+                ftp.storbinary('STOR ' + dst_prefix + dst_path, open(src_path, 'rb'))
                 ftp.quit()
             else:
                 raise Exception("bad job order parameters")
