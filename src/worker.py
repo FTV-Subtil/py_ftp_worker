@@ -125,6 +125,7 @@ def callback(ch, method, properties, body):
             dst_username = get_parameter(parameters, 'destination_username')
             dst_password = get_parameter(parameters, 'destination_password')
             dst_prefix = get_parameter(parameters, 'destination_prefix')
+            ssl = get_parameter(parameters, 'ssl')
 
             if src_prefix != None:
                 src_path = src_prefix + src_path
@@ -136,18 +137,33 @@ def callback(ch, method, properties, body):
                 if not os.path.exists(os.path.dirname(dst_path)):
                     os.makedirs(os.path.dirname(dst_path))
 
-                ftp = FTP(src_hostname)
-                ftp.login(src_username, src_password)
-                ftp.retrbinary('RETR ' + src_path, open(dst_path, 'wb').write)
-                ftp.quit()
+                if ssl == True:
+                    ftp = FTP_TLS(src_hostname)
+                    ftp.login(src_username, src_password)
+                    ftp.prot_p()
+                    ftp.retrbinary('RETR ' + src_path, open(dst_path, 'wb').write)
+                    ftp.quit()
+                else:
+                    ftp = FTP(src_hostname)
+                    ftp.login(src_username, src_password)
+                    ftp.retrbinary('RETR ' + src_path, open(dst_path, 'wb').write)
+                    ftp.quit()
             elif dst_hostname:
-                ftp = FTP_TLS(dst_hostname)
-                ftp.login(dst_username, dst_password)
-                ftp.prot_p()
-                mkdirs(ftp, dst_path)
-                logging.info("start upload " + src_path + " to " + dst_path)
-                ftp.storbinary('STOR ' + dst_path, open(src_path, 'rb'))
-                ftp.quit()
+                if ssl == True:
+                    ftp = FTP_TLS(dst_hostname)
+                    ftp.login(dst_username, dst_password)
+                    ftp.prot_p()
+                    mkdirs(ftp, dst_path)
+                    logging.info("start upload " + src_path + " to " + dst_path)
+                    ftp.storbinary('STOR ' + dst_path, open(src_path, 'rb'))
+                    ftp.quit()
+                else:
+                    ftp = FTP(dst_hostname)
+                    ftp.login(dst_username, dst_password)
+                    mkdirs(ftp, dst_path)
+                    logging.info("start upload " + src_path + " to " + dst_path)
+                    ftp.storbinary('STOR ' + dst_path, open(src_path, 'rb'))
+                    ftp.quit()
             else:
                 raise Exception("bad job order parameters")
 
